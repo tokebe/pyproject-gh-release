@@ -80,9 +80,9 @@ jobs:
   detect:
     runs-on: ubuntu-latest
     outputs:
-      is-new: ${{ steps.r.outputs.is-new }}
-      version: ${{ steps.r.outputs.version }}
-      changelog: ${{ steps.r.outputs.changelog }}
+      is-new: ${{ steps.detect-state.outputs.is-new }}
+      version: ${{ steps.detect-state.outputs.version }}
+      changelog: ${{ steps.detect-state.outputs.changelog }}
     steps:
       - uses: actions/checkout@v5
         with:
