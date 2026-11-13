@@ -1,4 +1,4 @@
-# Python GitHub Autorelease
+# Pyproject GitHub Autorelease
 
 Check whether the `pyproject.toml` package version has no release tag yet. If so, parse
 `CHANGELOG.md` (assuming [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
