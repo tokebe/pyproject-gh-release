@@ -1,0 +1,82 @@
+name: 'Python Github Autorelease'
+author: "tokebe"
+description: "Detect the package version and make a new release if it's new."
+branding:
+  icon: upload-cloud
+  color: blue
+
+inputs:
+  pyproject:
+    description: Path to the pyproject.toml to read.
+    default: pyproject.toml
+  parse-changelog:
+    description: Read the matching CHANGELOG.md entry for the new version.
+    default: "true"
+  create-release:
+    description: Create a GitHub release. Set false to run detection only.
+    default: "true"
+
+outputs:
+  version:
+    description: Version declared in pyproject.toml.
+    value: ${{ steps.current-version.outputs.version }}
+  is-new:
+    description: true if no tag exists for this version.
+    value: ${{ steps.check.outputs.is_new }}
+  changelog:
+    description: CHANGELOG.md entry body for this version (empty if not parsed).
+    value: ${{ steps.read-changelog.outputs.changes }}
+  release-url:
+    description: URL of the created GitHub release (empty if none created).
+    value: ${{ steps.release.outputs.url }}
+
+runs:
+  using: composite
+  steps:
+
+    # Set up isolated python
+    - id: setup
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+        update-environment: false
+
+    - id: current-version
+      shell: bash
+      env:
+        PY: ${{ steps.setup.outputs.python-path }}
+        PYPROJECT: ${{ inputs.pyproject }}
+      run: |
+        V=$("$PY" - "$PYPROJECT" <<'EOF'
+        import sys, tomllib
+        with open(sys.argv[1], "rb") as f:
+            print(tomllib.load(f)["project"]["version"])
+        EOF
+        )
+        echo "version=$V" >> "$GITHUB_OUTPUT"
+
+    # New release when no tag exists for this version
+    - id: check-tags
+      shell: bash
+      env:
+        VERSION: ${{ steps.current-version.outputs.version }}
+      run: |
+        if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+          echo "is_new=false" >> "$GITHUB_OUTPUT"
+        else
+          echo "is_new=true" >> "$GITHUB_OUTPUT"
+        fi
+
+    - id: read-changelog
+      if: steps.check-tags.outputs.is_new == 'true' && inputs.parse-changelog == 'true'
+      uses: mindsers/changelog-reader-action@v2
+      with:
+        version: ${{ steps.current-version.outputs.version }}
+
+    - id: release
+      if: steps.check-tage.outputs.is_new == 'true' && inputs.create-release == 'true'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ steps.current-version.outputs.version }}
+        name: v${{ steps.current-version.outputs.version }}
+        body: ${{ steps.read-changelog.outputs.changes }}
