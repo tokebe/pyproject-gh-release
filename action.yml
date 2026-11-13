@@ -22,7 +22,7 @@ outputs:
     value: ${{ steps.current-version.outputs.version }}
   is-new:
     description: true if no tag exists for this version.
-    value: ${{ steps.check.outputs.is_new }}
+    value: ${{ steps.check-tags.outputs.is_new }}
   changelog:
     description: CHANGELOG.md entry body for this version (empty if not parsed).
     value: ${{ steps.read-changelog.outputs.changes }}
@@ -74,7 +74,7 @@ runs:
         version: ${{ steps.current-version.outputs.version }}
 
     - id: release
-      if: steps.check-tage.outputs.is_new == 'true' && inputs.create-release == 'true'
+      if: steps.check-tags.outputs.is_new == 'true' && inputs.create-release == 'true'
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ steps.current-version.outputs.version }}
